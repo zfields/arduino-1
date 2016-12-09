@@ -276,7 +276,7 @@ void setPinModeCallback(byte pin, int mode)
     }
   }
   if (IS_PIN_ANALOG(pin)) {
-    reportAnalogCallback(PIN_TO_ANALOG(pin), mode == PIN_MODE_ANALOG ? 1 : 0); // turn on/off reporting
+    reportAnalogCallback(pin, mode == PIN_MODE_ANALOG ? 1 : 0); // turn on/off reporting
   }
   if (IS_PIN_DIGITAL(pin)) {
     if (mode == INPUT || mode == PIN_MODE_PULLUP) {
@@ -435,8 +435,9 @@ void digitalWriteCallback(byte port, int value)
  */
 //void FirmataClass::setAnalogPinReporting(byte pin, byte state) {
 //}
-void reportAnalogCallback(byte analogPin, int value)
+void reportAnalogCallback(byte pin, int value)
 {
+  byte analogPin = PIN_TO_ANALOG(pin);
   if (analogPin < TOTAL_ANALOG_PINS) {
     if (value == 0) {
       analogInputsToReport = analogInputsToReport & ~ (1 << analogPin);
@@ -448,7 +449,7 @@ void reportAnalogCallback(byte analogPin, int value)
         // Send pin value immediately. This is helpful when connected via
         // ethernet, wi-fi or bluetooth so pin states can be known upon
         // reconnecting.
-        Firmata.sendAnalog(analogPin, analogRead(analogPin));
+        Firmata.sendAnalog(pin, analogRead(pin));
       }
     }
   }
@@ -634,11 +635,11 @@ void sysexCallback(byte command, byte argc, byte *argv)
       Firmata.write(CAPABILITY_RESPONSE);
       for (byte pin = 0; pin < TOTAL_PINS; pin++) {
         if (IS_PIN_DIGITAL(pin)) {
-          Firmata.write((byte)INPUT);
+          Firmata.write((byte)PIN_MODE_INPUT);
           Firmata.write(1);
           Firmata.write((byte)PIN_MODE_PULLUP);
           Firmata.write(1);
-          Firmata.write((byte)OUTPUT);
+          Firmata.write((byte)PIN_MODE_OUTPUT);
           Firmata.write(1);
         }
         if (IS_PIN_ANALOG(pin)) {
@@ -784,7 +785,7 @@ void setup()
  *============================================================================*/
 void loop()
 {
-  byte pin, analogPin;
+  byte pin;
 
   /* DIGITALREAD - as fast as possible, check for changes and output them to the
    * FTDI buffer using Serial.print()  */
@@ -803,9 +804,8 @@ void loop()
     /* ANALOGREAD - do all analogReads() at the configured sampling interval */
     for (pin = 0; pin < TOTAL_PINS; pin++) {
       if (IS_PIN_ANALOG(pin) && Firmata.getPinMode(pin) == PIN_MODE_ANALOG) {
-        analogPin = PIN_TO_ANALOG(pin);
-        if (analogInputsToReport & (1 << analogPin)) {
-          Firmata.sendAnalog(analogPin, analogRead(analogPin));
+        if (analogInputsToReport & (1 << PIN_TO_ANALOG(pin))) {
+          Firmata.sendAnalog(pin, analogRead(pin));
         }
       }
     }

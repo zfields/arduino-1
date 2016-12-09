@@ -43,7 +43,7 @@ const
 {
   if ( (Stream *)NULL == FirmataStream ) { return; }
   // pin can only be 0-15, so chop higher bits
-  FirmataStream->write(REPORT_ANALOG | (pin & 0xF));
+  FirmataStream->write(REPORT_ANALOG | (0xF & pinToAnalog(pin)));
   FirmataStream->write(stream_enable);
 }
 
@@ -81,9 +81,12 @@ const
 /**
  * The FirmataMarshaller class.
  */
-FirmataMarshaller::FirmataMarshaller()
-:
-  FirmataStream((Stream *)NULL)
+FirmataMarshaller::FirmataMarshaller
+(
+    const pinToAnalogFunction pinToAnalog
+) :
+  FirmataStream((Stream *)NULL),
+  pinToAnalog(pinToAnalog)
 {
 }
 
@@ -180,7 +183,7 @@ const
 {
   if ( (Stream *)NULL == FirmataStream ) { return; }
   // pin can only be 0-15, so chop higher bits
-  FirmataStream->write(ANALOG_MESSAGE | (pin & 0xF));
+  FirmataStream->write(ANALOG_MESSAGE | (0xF & pinToAnalog(pin)));
   sendValueAsTwo7bitBytes(value);
 }
 

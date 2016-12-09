@@ -28,8 +28,12 @@ class FirmataMarshaller
 {
   friend class FirmataClass;
   public:
+    typedef uint8_t (*pinToAnalogFunction)(size_t pin);
+
     /* constructors */
-    FirmataMarshaller();
+    FirmataMarshaller(
+        const pinToAnalogFunction pinToAnalog
+    );
 
     /* public methods */
     void begin(Stream &s);
@@ -56,6 +60,7 @@ class FirmataMarshaller
     void sendValueAsTwo7bitBytes(uint16_t value) const;
 
     Stream * FirmataStream;
+    const pinToAnalogFunction pinToAnalog;
 };
 
 #endif /* FirmataMarshaller_h */

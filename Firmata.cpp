@@ -79,7 +79,8 @@ void FirmataClass::endSysex(void)
  */
 FirmataClass::FirmataClass()
 :
-  parser(FirmataParser(parserBuffer, MAX_DATA_BYTES))
+  parser(FirmataParser(parserBuffer, MAX_DATA_BYTES)),
+  marshaller(FirmataMarshaller(::pinToAnalog))
 {
   firmwareVersionCount = 0;
   firmwareVersionVector = 0;

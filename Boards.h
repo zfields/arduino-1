@@ -841,12 +841,15 @@ static inline unsigned char writePort(byte port, byte value, byte bitmask)
 #endif
 }
 
-
-
-
 #ifndef TOTAL_PORTS
 #define TOTAL_PORTS             ((TOTAL_PINS + 7) / 8)
 #endif
+
+/*==============================================================================
+ * pinToAnalog() - Convert a raw pin number to an analog pin number
+ *============================================================================*/
+static inline unsigned char pinToAnalog(unsigned int pin) __attribute__((always_inline, unused));
+static inline unsigned char pinToAnalog(unsigned int pin) { return static_cast<unsigned char>(PIN_TO_ANALOG(pin)); }
 
 
 #endif /* Firmata_Boards_h */
