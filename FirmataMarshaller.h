@@ -61,10 +61,11 @@ class FirmataMarshaller
 
   private:
     /* utility methods */
+    size_t encodeByteStream (uint16_t bytec, uint8_t * bytev) const;
     void reportAnalog(uint8_t pin, bool stream_enable) const;
     void reportDigitalPort(uint8_t portNumber, bool stream_enable) const;
-    void sendExtendedAnalog(uint8_t pin, uint16_t bytec, uint8_t * bytev) const;
-    size_t encodeByteStream (uint16_t bytec, uint8_t * bytev) const;
+    void sendExtendedAnalog(uint8_t pin, size_t bytec, uint8_t * bytev) const;
+    void transformByteStreamToMessageBytes (size_t bytec, uint8_t * bytev, size_t max_bytes = 0) const;
 
     Stream * FirmataStream;
 };
