@@ -401,6 +401,26 @@ bool FirmataParser::bufferDataAtPosition(const uint8_t data, const size_t pos)
 }
 
 /**
+ * Transform 7-bit firmata message into 8-bit stream
+ * @param bytec The encoded data byte length of the message (max: 16383).
+ * @param bytev A pointer to the encoded array of data bytes.
+ * @return The length of the decoded data.
+ * @note The conversion will be done in place on the provided buffer.
+ * @private
+ */
+size_t FirmataParser::decodeByteStream(size_t bytec, uint8_t * bytev[]) {
+  size_t decoded_bytes, i;
+
+  for ( i = 0, decoded_bytes = 0 ; i < bytec ; ++decoded_bytes, ++i ) {
+      (*bytev)[decoded_bytes] = (*bytev)[i];
+      ++i;
+      (*bytev)[decoded_bytes] = ((*bytev)[decoded_bytes] | ((*bytev)[i] << 7));
+  }
+
+  return decoded_bytes;
+}
+
+/**
  * Process incoming sysex messages. Handles REPORT_FIRMWARE and STRING_DATA internally.
  * Calls callback function for STRING_DATA and all other sysex messages.
  * @private
@@ -410,39 +430,22 @@ void FirmataParser::processSysexMessage(void)
   switch (dataBuffer[0]) { //first byte in buffer is command
     case REPORT_FIRMWARE:
       if (currentReportFirmwareCallback) {
-        size_t sv_major = dataBuffer[1], sv_minor = dataBuffer[2];
-        size_t i = 0, j = 3;
-        while (j < sysexBytesRead) {
-          // The string length will only be at most half the size of the
-          // stored input buffer so we can decode the string within the buffer.
-          bufferDataAtPosition(dataBuffer[j], i);
-          ++i;
-          ++j;
-        }
-        bufferDataAtPosition('\0', i); // Terminate the string
-        (*currentReportFirmwareCallback)(currentReportFirmwareCallbackContext, sv_major, sv_minor, (const char *)&dataBuffer[0]);
+        const size_t major_version_offset = 1;
+        const size_t minor_version_offset = 2;
+        const size_t string_offset = 3;
+        uint8_t * string_location = &dataBuffer[string_offset];
+        const size_t end_of_string = (string_offset + decodeByteStream((sysexBytesRead - string_offset), &string_location));
+        bufferDataAtPosition('\0', end_of_string); // NULL terminate the string
+        (*currentReportFirmwareCallback)(currentReportFirmwareCallbackContext, dataBuffer[major_version_offset], dataBuffer[minor_version_offset], (const char *)&dataBuffer[string_offset]);
       }
       break;
     case STRING_DATA:
       if (currentStringCallback) {
-        size_t bufferLength = (sysexBytesRead - 1) / 2;
-        size_t i = 1, j = 0;
-        while (j < bufferLength) {
-          // The string length will only be at most half the size of the
-          // stored input buffer so we can decode the string within the buffer.
-          bufferDataAtPosition(dataBuffer[i], j);
-          ++i;
-          bufferDataAtPosition((dataBuffer[j] + (dataBuffer[i] << 7)), j);
-          ++i;
-          ++j;
-        }
-        // Make sure string is null terminated. This may be the case for data
-        // coming from client libraries in languages that don't null terminate
-        // strings.
-        if (dataBuffer[j - 1] != '\0') {
-          bufferDataAtPosition('\0', j);
-        }
-        (*currentStringCallback)(currentStringCallbackContext, (const char *)&dataBuffer[0]);
+        const size_t string_offset = 1;
+        uint8_t * string_location = &dataBuffer[string_offset];
+        const size_t end_of_string = (string_offset + decodeByteStream((sysexBytesRead - string_offset), &string_location));
+        bufferDataAtPosition('\0', end_of_string); // NULL terminate the string
+        (*currentStringCallback)(currentStringCallbackContext, (const char *)&dataBuffer[string_offset]);
       }
       break;
     default:
